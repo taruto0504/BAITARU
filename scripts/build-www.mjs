@@ -7,7 +7,7 @@ const out = join(root, "www");
 
 // service-worker.js is left out on purpose: inside the app its cache-first
 // strategy would keep serving old files after an app update.
-const entries = ["index.html", "vital.html", "ecg.html", "terms.html", "manifest.json", "css", "js", "icons"];
+const entries = ["index.html", "manifest.json", "css", "js", "icons"];
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out);

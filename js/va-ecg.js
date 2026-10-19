@@ -4,7 +4,8 @@
   const { esc, chip, cite, fmtTime } = window.VA;
   const E = window.VAEcg;
   const icon = window.icon;
-  const $ = (id) => document.getElementById(id);
+  const root = document.getElementById("view-ecg");
+  const $ = (id) => root.querySelector("#" + id);
 
   const DRAFT_KEY = "vaEcgDraft_v1";
   const QUIZ_KEY = "vaEcgQuiz_v1";
@@ -23,10 +24,10 @@
   let recordId = null;
 
   // ---- タブ ----
-  document.querySelectorAll(".tab-btn").forEach((b) => {
+  root.querySelectorAll(".tab-btn").forEach((b) => {
     b.addEventListener("click", () => {
-      document.querySelectorAll(".tab-btn").forEach((x) => x.classList.toggle("active", x === b));
-      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("active", p.id === "tab-" + b.dataset.tab));
+      root.querySelectorAll(".tab-btn").forEach((x) => x.classList.toggle("active", x === b));
+      root.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("active", p.id === "tab-" + b.dataset.tab));
       $("urgency").hidden = b.dataset.tab !== "judge";
       if (b.dataset.tab === "quiz" && !quiz.current) nextQuiz();
     });
@@ -43,7 +44,7 @@
     });
   });
 
-  document.querySelectorAll(".va-seg[data-field]").forEach((seg) => {
+  root.querySelectorAll(".va-seg[data-field]").forEach((seg) => {
     seg.addEventListener("click", (e) => {
       const b = e.target.closest("button");
       if (!b) return;
@@ -55,7 +56,7 @@
   });
 
   function segValue(field) {
-    const seg = document.querySelector(`.va-seg[data-field="${field}"]`);
+    const seg = root.querySelector(`.va-seg[data-field="${field}"]`);
     const on = Array.from(seg.querySelectorAll("button.on")).map((b) => b.dataset.value);
     return seg.dataset.multi ? on.join(",") : on[0] || "";
   }
@@ -79,7 +80,7 @@
       $(k).value = f[k] || "";
     });
     SEGS.forEach((k) => {
-      const seg = document.querySelector(`.va-seg[data-field="${k}"]`);
+      const seg = root.querySelector(`.va-seg[data-field="${k}"]`);
       const vals = String(f[k] || "").split(",");
       seg.querySelectorAll("button").forEach((b) => b.classList.toggle("on", vals.includes(b.dataset.value)));
     });
@@ -181,7 +182,7 @@
       return;
     }
     recordId = rec.id;
-    history.replaceState(null, "", "#" + recordId);
+    history.replaceState(null, "", "#ecg/" + recordId);
     showMsg(`${fmtTime(now)} に記録しました（画像は保存していません）`);
   }
 
@@ -368,6 +369,11 @@
     const img = new Image();
     img.onload = () => {
       setSource(img, img.naturalWidth, img.naturalHeight, null, "読み込んだ画像（縮尺未設定）");
+      view.file = file;
+      $("ai-out").innerHTML = "";
+      window.VAReader.available().then((ok) => {
+        $("ai-read").hidden = !ok || view.file !== file;
+      });
       URL.revokeObjectURL(url);
     };
     img.onerror = () => {
@@ -381,10 +387,12 @@
   $("file-photo").addEventListener("change", (e) => loadFile(e.target));
 
   let sampleIndex = 0;
-  const SAMPLE_TYPES = ["nsr", "af", "avb1", "pvc", "wenck", "stach"];
+  const SAMPLE_TYPES = ["nsr", "af", "avb1", "pvc", "wenck", "stach", "afl", "avb3", "stemiInf", "rbbb"];
   function loadSample() {
     const type = SAMPLE_TYPES[sampleIndex % SAMPLE_TYPES.length];
     sampleIndex++;
+    view.file = null;
+    $("ai-read").hidden = true;
     const strip = E.makeStrip(type, 6, 7 + sampleIndex);
     const c = document.createElement("canvas");
     E.drawStrip(c, strip, SAMPLE_PX_PER_MM, PAPER);
@@ -393,21 +401,85 @@
   $("load-sample-strip").addEventListener("click", loadSample);
   window.addEventListener("resize", drawViewer);
 
+  // ---- 写真から所見を読み取る(AI) ----
+  // 読み取った所見を入力欄に入れ、ルール判定と AI の推定を並べて示す(2系統の判定)。
+  const ALLOWED = {
+    regularity: ["reg", "irreg", "irregirreg"],
+    p: ["normal", "none", "fib", "flutter", "more", "retro"],
+    av: ["prolonging", "drop", "dissoc"],
+    qrsShape: ["normal", "wide", "rbbb", "lbbb", "delta", "polymorph", "chaotic", "flat"],
+    flags: ["peakedT", "qwave", "brugada", "pacing", "noise"],
+  };
+  const CONF_LABEL = { high: "高", mid: "中", low: "低" };
+  let aiCtl = null;
+
+  $("ai-read").addEventListener("click", async () => {
+    if (!view.file || aiCtl) return;
+    const btn = $("ai-read");
+    btn.disabled = true;
+    $("ai-out").innerHTML = `<div class="va-import-status"><span class="va-spinner"></span>所見を読み取っています…（数十秒かかることがあります）<button type="button" class="va-text-btn" id="ai-stop">中止</button></div>`;
+    aiCtl = new AbortController();
+    $("ai-stop").addEventListener("click", () => aiCtl && aiCtl.abort());
+    try {
+      applyAi((await window.VAReader.read("ecg", view.file, aiCtl.signal)) || {});
+    } catch (e) {
+      $("ai-out").innerHTML = e.code === "cancelled" ? "" : `<p class="va-ai-msg">${icon("alert")}${esc(e.message)}</p>`;
+    } finally {
+      aiCtl = null;
+      btn.disabled = false;
+    }
+  });
+
+  function applyAi(r) {
+    if (r.readable === false) {
+      $("ai-out").innerHTML = `<p class="va-ai-msg">${icon("alert")}波形を読み取れませんでした。${esc(r.reason || "")} 撮り直すか、電子キャリパーで計測してください。</p>`;
+      return;
+    }
+    const f = readForm();
+    ["hr", "pr", "qrs", "qt"].forEach((k) => {
+      const n = Number(r[k]);
+      if (r[k] != null && isFinite(n) && n > 0) f[k] = String(Math.round(n));
+    });
+    ["regularity", "p", "av", "qrsShape"].forEach((k) => {
+      if (ALLOWED[k].includes(r[k])) f[k] = r[k];
+    });
+    if (Array.isArray(r.flags)) f.flags = r.flags.filter((x) => ALLOWED.flags.includes(x)).join(",");
+    ["stUp", "stDown"].forEach((k) => {
+      if (Array.isArray(r[k])) f[k] = r[k].filter((l) => E.LEADS.includes(l));
+    });
+    writeForm(f);
+    update();
+    const top = last.rhythms[0];
+    const core = (name) => String(name || "").replace(/[（(].*?[）)]/g, "").trim();
+    const aiName = core(r.rhythm);
+    const agree = top && aiName && (core(top.name).includes(aiName) || aiName.includes(core(top.name)));
+    $("ai-out").innerHTML = `<div class="va-ai-result">
+      <div class="va-ai-row"><span>AIの読み取り</span><b>${esc(r.rhythm || "判定なし")}</b>${r.confidence ? `<span class="va-fit">確からしさ ${esc(CONF_LABEL[r.confidence] || r.confidence)}</span>` : ""}</div>
+      <div class="va-ai-row"><span>所見からのルール判定</span><b>${esc(top ? top.name : "判定できず")}</b></div>
+      <p class="${agree ? "va-ai-agree" : "va-unclear"}">${icon(agree ? "check" : "info")}${
+        agree ? "2つの判定が一致しました。" : "2つの判定が一致しません（判定困難）。両方の可能性を考え、波形と所見を確認してください。"
+      }</p>
+      ${Array.isArray(r.quality) && r.quality.length ? `<p class="hint">${icon("alert")}読み取りに影響した点：${esc(r.quality.join("、"))}</p>` : ""}
+      <p class="hint">読み取った所見を下の「所見」に入れました。波形と見比べて確認・修正してください。修正すると判定も更新されます。</p>
+    </div>`;
+  }
+
   // ---- クイズ ----
   const quiz = Object.assign({ current: null, answered: false }, window.VA.readJSON(QUIZ_KEY, { correct: 0, total: 0 }));
 
   function nextQuiz() {
-    const keys = Object.keys(E.RHYTHMS);
+    const keys = Object.keys(E.WAVES);
     let type;
     do type = keys[Math.floor(Math.random() * keys.length)];
-    while (quiz.current && type === quiz.current.type && keys.length > 1);
-    const strip = E.makeStrip(type, 6, Math.floor(Math.random() * 1e6));
+    while (quiz.current && type === quiz.current.type);
+    const strip = E.makeStrip(type, 6, Math.floor(Math.random() * 1e9));
     quiz.current = strip;
     quiz.answered = false;
     E.drawStrip($("quiz-canvas"), strip, 5, PAPER);
-    const others = keys.filter((k) => k !== type).sort(() => Math.random() - 0.5).slice(0, 3);
-    const choices = others.concat(type).sort(() => Math.random() - 0.5);
-    $("quiz-choices").innerHTML = choices.map((k) => `<button type="button" class="btn-secondary" data-k="${k}">${esc(E.RHYTHMS[k].label)}</button>`).join("");
+    $("quiz-canvas").parentElement.scrollLeft = 0;
+    const info = E.WAVES[type];
+    $("quiz-meta").innerHTML = `<span class="va-quiz-lead">誘導 ${esc(strip.lead)}</span>${info.context ? `<span class="va-quiz-context">${icon("info")}状況：${esc(info.context)}</span>` : ""}`;
+    $("quiz-choices").innerHTML = E.quizChoices(type).map((k) => `<button type="button" class="btn-secondary" data-k="${k}">${esc(E.WAVES[k].label)}</button>`).join("");
     $("quiz-feedback").innerHTML = "";
     renderScore();
   }
@@ -415,6 +487,8 @@
   function renderScore() {
     $("quiz-score").textContent = quiz.total ? `これまでの正解 ${quiz.correct} / ${quiz.total}` : "";
   }
+
+  const RISK_CHIP = { arrest: "abn", high: "abn", mid: "cau", low: "ok" };
 
   $("quiz-choices").addEventListener("click", (e) => {
     const b = e.target.closest("button");
@@ -428,21 +502,28 @@
       x.classList.toggle("is-correct", x.dataset.k === quiz.current.type);
       x.classList.toggle("is-wrong", x === b && !ok);
     });
-    const info = E.RHYTHMS[quiz.current.type];
-    $("quiz-feedback").innerHTML = `<div class="va-quiz-fb ${ok ? "ok" : "ng"}">${icon(ok ? "check" : "x")}<div><b>${ok ? "正解" : "不正解"}：${esc(info.label)}</b>${quiz.current.hr ? `（心拍数 約${quiz.current.hr}回/分）` : ""}<p>${esc(info.explain)}</p></div></div>`;
+    const info = E.WAVES[quiz.current.type];
+    $("quiz-feedback").innerHTML = `<div class="va-quiz-fb ${ok ? "ok" : "ng"}">${icon(ok ? "check" : "x")}<div><b>${ok ? "正解" : "不正解"}：${esc(info.label)}</b>${quiz.current.hr ? `（心拍数 約${quiz.current.hr}回/分）` : ""}<p>${esc(info.explain)}</p></div></div>
+      <div class="va-quiz-more">
+        <div class="va-quiz-h">${icon("bookmark")}考えられる疾患・原因</div>
+        <ul class="va-list">${info.causes.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>
+        <div class="va-quiz-h">${icon("alert")}リスク <span class="va-chip lv-${RISK_CHIP[info.risk]}">${esc(E.RISK_LABEL[info.risk])}</span></div>
+        <p class="va-quiz-risk">${esc(info.riskText)}</p>
+      </div>`;
     renderScore();
   });
   $("quiz-next").addEventListener("click", nextQuiz);
 
   // ---- 初期化 ----
-  document.querySelectorAll("#tab-judge input:not([type=file]), #tab-judge select").forEach((el) => {
+  root.querySelectorAll("#tab-judge input:not([type=file]), #tab-judge select").forEach((el) => {
     if (el.id !== "calib-span") el.addEventListener("input", update);
   });
   $("record-btn").addEventListener("click", record);
   $("clear-btn").addEventListener("click", () => {
     recordId = null;
-    history.replaceState(null, "", location.pathname);
+    history.replaceState(null, "", "#ecg");
     writeForm({});
+    $("ai-out").innerHTML = "";
     update();
   });
   $("example-btn").addEventListener("click", () => {
@@ -454,16 +535,25 @@
     if (el.firstChild) el.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
-  const hashId = location.hash.slice(1);
-  const saved = hashId ? window.VA.ecg.get(hashId) : null;
-  const draft = window.VA.readJSON(DRAFT_KEY, null);
-  if (saved) {
-    recordId = saved.id;
-    writeForm(saved.form);
-  } else if (draft && !hashId) {
-    recordId = draft.recordId && window.VA.ecg.get(draft.recordId) ? draft.recordId : null;
-    writeForm(draft.form);
+  let started = false;
+  function show(id) {
+    if (id) {
+      const saved = window.VA.ecg.get(id);
+      if (saved && saved.id !== recordId) {
+        recordId = saved.id;
+        writeForm(saved.form);
+      }
+    } else if (!started) {
+      const draft = window.VA.readJSON(DRAFT_KEY, null);
+      if (draft) {
+        recordId = draft.recordId && window.VA.ecg.get(draft.recordId) ? draft.recordId : null;
+        writeForm(draft.form);
+      }
+    }
+    if (!started) loadSample();
+    started = true;
+    update();
   }
-  loadSample();
-  update();
+
+  window.VAEcgView = { show };
 })();

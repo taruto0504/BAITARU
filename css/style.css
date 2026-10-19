@@ -2193,3 +2193,351 @@ input.va-small,
   bottom: -8px;
   opacity: 0.22;
 }
+
+/* 1ページの中の画面 */
+.va-view[hidden] {
+  display: none;
+}
+
+/* 自由入力から認識した主訴・既往 */
+.va-understood {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.va-understood:empty {
+  display: none;
+}
+
+.va-understood span {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-primary-dark);
+  font-weight: 700;
+}
+
+/* 算出指標の小さなタイル */
+.va-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.va-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.va-mini.lv-abn { border-color: #f0b2b2; background: #fdf3f3; }
+.va-mini.lv-cau { border-color: #f2d98a; background: #fffaeb; }
+
+.va-mini-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.va-mini-val {
+  font-family: var(--va-num-font);
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary-dark);
+}
+
+.va-mini-val small {
+  margin-left: 2px;
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.va-result .va-more {
+  margin-top: 10px;
+}
+
+/* 疾患推定ボタン */
+.va-estimate-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 56px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--va-mon-bg);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  box-shadow: var(--shadow-card);
+}
+
+.va-estimate-btn .ic {
+  color: var(--va-hr);
+}
+
+.va-estimate-btn[aria-expanded="true"] {
+  background: #e3eaf1;
+  color: var(--color-text);
+  box-shadow: none;
+}
+
+.va-estimate-btn[aria-expanded="true"] .ic {
+  color: var(--color-primary);
+}
+
+.va-estimate-btn:disabled {
+  background: #e3eaf1;
+  color: var(--color-text-muted);
+  font-size: 13.5px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.va-estimate-btn:disabled .ic {
+  color: var(--color-text-muted);
+}
+
+/* 写真からの取り込み */
+.va-load-two {
+  grid-template-columns: 1fr 1fr;
+}
+
+.va-import .hint {
+  margin-top: 8px;
+}
+
+#v-import {
+  margin-top: 10px;
+}
+
+.va-import-img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #0c1822;
+}
+
+.va-import-status,
+.va-ai-msg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+.va-import-status .va-text-btn {
+  margin: 0 0 0 auto;
+  border: 1px solid var(--color-border);
+}
+
+.va-spinner {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: va-spin 0.8s linear infinite;
+}
+
+@keyframes va-spin {
+  to { transform: rotate(360deg); }
+}
+
+.va-import-confirm {
+  margin-top: 10px;
+}
+
+.va-import-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.va-import-row {
+  display: grid;
+  grid-template-columns: 24px 96px minmax(0, 1fr) 48px auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.va-import-row input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+.va-import-row input[type="number"] {
+  padding: 8px 10px;
+  font-family: var(--va-num-font);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.va-import-row.is-low input[type="number"] {
+  border-color: var(--va-cau);
+  background: #fffaeb;
+}
+
+.va-import-unit {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.va-import-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 4px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.va-import-side .va-seg {
+  width: 120px;
+}
+
+/* 心電図: AI の読み取り */
+.va-ai-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.va-ai-btn[hidden] {
+  display: none;
+}
+
+.va-ai-result {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #f7fafc;
+}
+
+.va-ai-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.va-ai-row > span:first-child {
+  min-width: 9em;
+  color: var(--color-text-muted);
+}
+
+.va-ai-row b {
+  font-size: 15px;
+}
+
+.va-ai-agree {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #e3f4ee;
+  color: #0b5a45;
+  font-size: 12.5px;
+}
+
+.va-ai-result .va-unclear {
+  margin: 8px 0 0;
+}
+
+/* 波形クイズ: 誘導・状況と解答後の解説 */
+.va-quiz-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.va-quiz-lead {
+  padding: 2px 9px;
+  border-radius: 6px;
+  background: var(--va-mon-bg);
+  color: var(--va-hr);
+  font-family: var(--va-num-font);
+  font-weight: 700;
+}
+
+.va-quiz-context {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--va-abn);
+  font-weight: 700;
+}
+
+.va-quiz-more {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.va-quiz-h {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 4px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.va-quiz-h + .va-list {
+  margin-bottom: 10px;
+}
+
+.va-quiz-risk {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .va-spinner { animation: none; }
+}

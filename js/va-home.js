@@ -17,7 +17,7 @@
     }
     box.innerHTML = `<ul class="va-recent">${items
       .map(({ kind, r }) => {
-        const href = kind === "vital" ? `vital.html#${r.id}` : `ecg.html#${r.id}`;
+        const href = kind === "vital" ? `#vital/${r.id}` : `#ecg/${r.id}`;
         const lv = r.urgency === "arrest" ? "high" : r.urgency;
         const count = kind === "vital" && r.entries.length > 1 ? `・${r.entries.length}回測定` : "";
         return `<li>
@@ -56,5 +56,5 @@
     "もう一度押すとすべて削除"
   );
 
-  render();
+  window.VAHome = { render };
 })();

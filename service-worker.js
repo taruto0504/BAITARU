@@ -1,9 +1,6 @@
-const CACHE_NAME = "vital-assess-v1";
+const CACHE_NAME = "vital-assess-v2";
 const ASSETS = [
   "index.html",
-  "vital.html",
-  "ecg.html",
-  "terms.html",
   "manifest.json",
   "css/style.css",
   "js/icons.js",
@@ -11,6 +8,8 @@ const ASSETS = [
   "js/consent.js",
   "js/sw-register.js",
   "js/va-common.js",
+  "js/va-reader.js",
+  "js/va-app.js",
   "js/va-home.js",
   "js/va-vital-engine.js",
   "js/va-vital.js",

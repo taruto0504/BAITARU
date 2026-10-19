@@ -2,7 +2,7 @@
   "use strict";
 
   // Bump the version when the terms change so everyone has to agree again.
-  const CONSENT_KEY = "vaTermsAccepted_v1";
+  const CONSENT_KEY = "vaTermsAccepted_v2";
 
   function hasConsent() {
     try {
@@ -25,19 +25,6 @@
 
   const icon = window.icon || (() => "");
 
-  if (document.body.dataset.page === "terms") {
-    const bar = document.createElement("div");
-    bar.className = "consent-bar";
-    bar.innerHTML = `<button class="btn-primary" type="button">${icon("check")} 同意して利用を開始する</button>`;
-    bar.querySelector("button").addEventListener("click", () => {
-      saveConsent();
-      location.href = "index.html";
-    });
-    document.body.appendChild(bar);
-    document.documentElement.classList.add("has-consent-bar");
-    return;
-  }
-
   const overlay = document.createElement("div");
   overlay.className = "consent-overlay";
   overlay.setAttribute("role", "dialog");
@@ -55,13 +42,32 @@
         <li>診断・治療の判断は、医師の指示・施設のプロトコルに基づき、<strong>利用者ご自身の責任</strong>で行ってください。</li>
         <li>本アプリの利用により生じたいかなる損害についても、<strong>開発者は責任を負いません</strong>。</li>
         <li>患者の氏名・IDなど、個人を特定できる情報は入力しないでください。記録はこの端末の中だけに保存されます。</li>
+        <li>写真の読み取りを使うと、その画像は読み取りのために Claude に送られます。氏名・IDが写らないように撮影してください。</li>
       </ul>
-      <a class="consent-link" href="terms.html">${icon("note")} 利用規約・免責事項(全文)を読む</a>
+      <a class="consent-link" href="#terms">${icon("note")} 利用規約・免責事項(全文)を読む</a>
       <label class="consent-check"><input type="checkbox" id="consent-check"> 上記および利用規約に同意します</label>
       <button class="btn-primary" id="consent-accept" type="button" disabled>同意して利用する</button>
     </div>`;
   document.body.appendChild(overlay);
   document.documentElement.classList.add("consent-open");
+
+  // 全文を読むときは同意画面をいったん閉じ、規約の下に同意ボタンを出す
+  overlay.querySelector(".consent-link").addEventListener("click", () => {
+    overlay.hidden = true;
+    document.documentElement.classList.remove("consent-open");
+    const bar = document.createElement("div");
+    bar.className = "consent-bar";
+    bar.innerHTML = `<button class="btn-primary" type="button">${icon("check")} 同意して利用を開始する</button>`;
+    bar.querySelector("button").addEventListener("click", () => {
+      saveConsent();
+      bar.remove();
+      overlay.remove();
+      document.documentElement.classList.remove("has-consent-bar");
+      location.hash = "#home";
+    });
+    document.body.appendChild(bar);
+    document.documentElement.classList.add("has-consent-bar");
+  });
 
   const check = overlay.querySelector("#consent-check");
   const accept = overlay.querySelector("#consent-accept");

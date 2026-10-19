@@ -10,15 +10,15 @@
 
   // 自由入力からも主訴・既往を拾うためのキーワード
   const COMPLAINT_WORDS = {
-    胸痛: ["胸痛", "胸が痛", "胸部痛", "胸部圧迫", "胸苦"],
-    背部痛: ["背部痛", "背中", "腰背部"],
+    胸痛: ["胸痛", "胸が痛", "胸の痛", "胸部痛", "胸部圧迫", "胸部不快", "胸苦", "胸背部"],
+    背部痛: ["背部痛", "背中", "腰背部", "背部の痛"],
     呼吸困難: ["呼吸困難", "息苦", "息切れ", "呼吸苦"],
-    意識障害: ["意識", "反応が", "ぼんやり", "せん妄"],
+    意識障害: ["意識障害", "意識低下", "意識レベル低下", "意識がな", "意識消失", "反応が", "ぼんやり", "せん妄", "呼びかけに"],
     頭痛: ["頭痛", "頭が痛"],
     腹痛: ["腹痛", "お腹", "腹部痛"],
     失神: ["失神", "気を失", "一過性意識消失"],
     動悸: ["動悸", "ドキドキ"],
-    発熱: ["発熱", "熱"],
+    発熱: ["発熱", "熱が", "高熱", "悪寒"],
     めまい: ["めまい", "眩暈", "ふらつ"],
     痙攣: ["痙攣", "けいれん", "ひきつけ"],
     "麻痺・しびれ": ["麻痺", "しびれ", "痺れ", "構音", "ろれつ"],
@@ -82,6 +82,17 @@
     return isFinite(n) ? n : null;
   }
 
+  // 自由入力の中に語があるか。直後に「なし」「ない」「否定」が続くものは数えない(例: 胸痛なし)
+  function mentions(text, word) {
+    let i = text.indexOf(word);
+    while (i >= 0) {
+      const tail = text.slice(i + word.length, i + word.length + 4);
+      if (!/^(は|も)?(なし|無し|ない|否定|認めず|-)/.test(tail)) return true;
+      i = text.indexOf(word, i + 1);
+    }
+    return false;
+  }
+
   function judge(x, t) {
     if (x == null) return null;
     if (x <= t[0]) return { level: "abn", dir: "low" };
@@ -130,11 +141,11 @@
     v.history = (raw.history || []).slice();
     const ct = raw.complaintText || "";
     Object.keys(COMPLAINT_WORDS).forEach((k) => {
-      if (!v.complaints.includes(k) && COMPLAINT_WORDS[k].some((w) => ct.includes(w))) v.complaints.push(k);
+      if (!v.complaints.includes(k) && COMPLAINT_WORDS[k].some((w) => mentions(ct, w))) v.complaints.push(k);
     });
     const ht = raw.historyText || "";
     Object.keys(HISTORY_WORDS).forEach((k) => {
-      if (!v.history.includes(k) && HISTORY_WORDS[k].some((w) => ht.includes(w))) v.history.push(k);
+      if (!v.history.includes(k) && HISTORY_WORDS[k].some((w) => mentions(ht, w))) v.history.push(k);
     });
 
     const checks = [];
