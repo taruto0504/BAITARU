@@ -1,0 +1,17 @@
+{
+  "name": "VITAL ASSESS（バイタルアセス）",
+  "short_name": "VITAL ASSESS",
+  "description": "バイタルサインと心電図から、緊急度・考えられる疾患・次の行動を整理する医療従事者向けのアセスメントアプリ",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f1f5f9",
+  "theme_color": "#0c1822",
+  "lang": "ja",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

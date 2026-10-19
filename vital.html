@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c1822">
+<title>バイタルサイン評価 | VITAL ASSESS</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="va-page">
+<script src="js/icons.js"></script>
+<script src="js/native.js"></script>
+<script src="js/consent.js"></script>
+<header class="app-header">
+  <a class="back-btn" href="index.html" aria-label="戻る"><svg class="ic"><use href="#i-chevron-left"/></svg></a>
+  <h1><svg class="ic"><use href="#i-heart-pulse"/></svg>バイタルサイン評価</h1>
+  <label class="va-learn-toggle"><input type="checkbox" id="learn-mode"> 学習</label>
+</header>
+
+<button class="va-urgency lv-none" id="urgency" type="button" aria-live="polite">
+  <span class="va-urgency-label" id="urgency-label">未評価</span>
+  <span class="va-urgency-sub" id="urgency-sub">わかっている値を入力すると、すぐに評価します</span>
+</button>
+
+<main class="va-main">
+  <div id="checks"></div>
+
+  <section class="va-monitor" aria-label="バイタルサイン入力">
+    <div class="va-tile tone-hr">
+      <div class="va-tile-head"><span>HR</span><span class="unit">回/分</span><span class="va-tile-status" data-status="hr"></span></div>
+      <input class="va-num" id="hr" type="number" inputmode="numeric" placeholder="--" aria-label="HR（脈拍）回/分">
+      <div class="va-seg" data-field="hrRhythm">
+        <button type="button" data-value="reg">整</button><button type="button" data-value="irreg">不整</button>
+      </div>
+    </div>
+    <div class="va-tile tone-spo2">
+      <div class="va-tile-head"><span>SpO2</span><span class="unit">%</span><span class="va-tile-status" data-status="spo2"></span></div>
+      <input class="va-num" id="spo2" type="number" inputmode="numeric" placeholder="--" aria-label="SpO2 %">
+      <div class="va-seg" data-field="o2">
+        <button type="button" data-value="air">室内気</button><button type="button" data-value="o2">酸素</button>
+      </div>
+      <div class="va-o2-extra" id="o2-extra" hidden>
+        <input class="va-small" id="o2Flow" type="number" inputmode="decimal" placeholder="流量" aria-label="酸素流量 L/分"><span class="unit">L/分</span>
+      </div>
+      <label class="va-check"><input type="checkbox" id="hypercapnic"> 高CO2血症のリスク（目標88〜92%）</label>
+    </div>
+    <div class="va-tile tone-bp va-wide">
+      <div class="va-tile-head"><span>血圧</span><span class="unit">mmHg</span></div>
+      <div class="va-bp-grid">
+        <div>
+          <div class="va-bp-side">右 <span class="va-tile-status" data-status="bpR"></span></div>
+          <div class="va-bp-row">
+            <input class="va-num" id="rSys" type="number" inputmode="numeric" placeholder="---" aria-label="右 収縮期血圧">
+            <span class="slash">/</span>
+            <input class="va-num va-num-sm" id="rDia" type="number" inputmode="numeric" placeholder="--" aria-label="右 拡張期血圧">
+          </div>
+        </div>
+        <div>
+          <div class="va-bp-side">左 <span class="va-tile-status" data-status="bpL"></span></div>
+          <div class="va-bp-row">
+            <input class="va-num" id="lSys" type="number" inputmode="numeric" placeholder="---" aria-label="左 収縮期血圧">
+            <span class="slash">/</span>
+            <input class="va-num va-num-sm" id="lDia" type="number" inputmode="numeric" placeholder="--" aria-label="左 拡張期血圧">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="va-tile tone-rr">
+      <div class="va-tile-head"><span>RR</span><span class="unit">回/分</span><span class="va-tile-status" data-status="rr"></span></div>
+      <input class="va-num" id="rr" type="number" inputmode="numeric" placeholder="--" aria-label="呼吸数 回/分">
+      <input class="va-small va-memo" id="rrNote" type="text" placeholder="呼吸様式メモ" aria-label="呼吸様式のメモ">
+    </div>
+    <div class="va-tile tone-temp">
+      <div class="va-tile-head"><span>体温</span><span class="unit">℃</span><span class="va-tile-status" data-status="temp"></span></div>
+      <input class="va-num" id="temp" type="number" inputmode="decimal" step="0.1" placeholder="--.-" aria-label="体温 ℃">
+      <select class="va-small" id="tempSite" aria-label="測定部位">
+        <option value="">部位</option><option>腋窩</option><option>口腔</option><option>鼓膜</option><option>直腸</option><option>膀胱・深部</option><option>皮膚（非接触）</option>
+      </select>
+    </div>
+    <div class="va-tile tone-gcs va-wide">
+      <div class="va-tile-head"><span>意識レベル</span><span class="va-tile-status" data-status="conscious"></span></div>
+      <div class="va-conscious">
+        <div class="va-jcs">
+          <span class="va-mini-label">JCS</span>
+          <select id="jcs" aria-label="JCS">
+            <option value="">未評価</option>
+            <option value="0">0 清明</option>
+            <option value="1">1 だいたい清明だが今ひとつ</option>
+            <option value="2">2 見当識障害</option>
+            <option value="3">3 名前・生年月日が言えない</option>
+            <option value="10">10 呼びかけで容易に開眼</option>
+            <option value="20">20 大声・揺さぶりで開眼</option>
+            <option value="30">30 痛み刺激でかろうじて開眼</option>
+            <option value="100">100 痛み刺激を払いのける</option>
+            <option value="200">200 手足を動かす・顔をしかめる</option>
+            <option value="300">300 痛み刺激に反応しない</option>
+          </select>
+          <div class="va-seg va-seg-sm" data-field="jcsSuffix" data-multi="1">
+            <button type="button" data-value="R">R 不穏</button><button type="button" data-value="I">I 失禁</button><button type="button" data-value="A">A 無動無言</button>
+          </div>
+        </div>
+        <div class="va-gcs">
+          <span class="va-mini-label">GCS <b id="gcs-total">--</b></span>
+          <div class="va-gcs-row">
+            <select id="gcsE" aria-label="GCS E 開眼">
+              <option value="">E</option><option value="4">E4 自発的に</option><option value="3">E3 呼びかけで</option><option value="2">E2 痛み刺激で</option><option value="1">E1 開眼しない</option>
+            </select>
+            <select id="gcsV" aria-label="GCS V 言語">
+              <option value="">V</option><option value="5">V5 見当識あり</option><option value="4">V4 混乱した会話</option><option value="3">V3 不適当な言葉</option><option value="2">V2 理解不能の音声</option><option value="1">V1 発語なし</option>
+            </select>
+            <select id="gcsM" aria-label="GCS M 運動">
+              <option value="">M</option><option value="6">M6 命令に従う</option><option value="5">M5 疼痛部位を認識</option><option value="4">M4 逃避屈曲</option><option value="3">M3 異常屈曲</option><option value="2">M2 伸展</option><option value="1">M1 動かない</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card va-patient">
+    <h2><svg class="ic"><use href="#i-user"/></svg>患者情報</h2>
+    <div class="va-field-label">主訴</div>
+    <div class="va-chips" id="complaints" data-multi="1"></div>
+    <div class="note-row va-gap-top">
+      <input type="text" id="complaintText" placeholder="自由入力（例：30分前からの胸部圧迫感）" aria-label="主訴の自由入力">
+      <button class="mic-btn" type="button" id="mic-complaint" aria-label="音声入力"><svg class="ic"><use href="#i-mic"/></svg></button>
+    </div>
+    <div class="voice-hint" id="voice-hint"></div>
+
+    <div class="va-two">
+      <div>
+        <div class="va-field-label">性別</div>
+        <div class="va-seg va-seg-light" data-field="sex">
+          <button type="button" data-value="m">男性</button><button type="button" data-value="f">女性</button><button type="button" data-value="u">不明</button>
+        </div>
+      </div>
+      <div>
+        <div class="va-field-label">年齢</div>
+        <div class="va-age-row">
+          <input type="number" id="age" inputmode="decimal" placeholder="歳" aria-label="年齢">
+          <span class="va-age-unit">歳</span>
+        </div>
+      </div>
+    </div>
+    <div class="va-seg va-seg-light va-gap-top" data-field="ageGroup" id="age-group">
+      <button type="button" data-value="infant">乳児</button><button type="button" data-value="child">小児</button><button type="button" data-value="adult">成人</button><button type="button" data-value="elderly">高齢者</button>
+    </div>
+    <div class="hint">年齢がわからないときは概数を選んでください。</div>
+
+    <div class="va-field-label">既往歴</div>
+    <div class="va-chips" id="history" data-multi="1"></div>
+    <div class="note-row va-gap-top">
+      <input type="text" id="historyText" placeholder="自由入力（内服薬など）" aria-label="既往歴の自由入力">
+      <button class="mic-btn" type="button" id="mic-history" aria-label="音声入力"><svg class="ic"><use href="#i-mic"/></svg></button>
+    </div>
+  </section>
+
+  <div id="learn-gate" class="va-learn-gate" hidden>
+    <p>学習モード：結果を見る前に、緊急度・考えられる疾患・次の行動を自分で考えてみましょう。</p>
+    <textarea id="learnMemo" rows="3" placeholder="自分のアセスメントをメモ（記録に一緒に保存されます）"></textarea>
+    <button class="btn-primary" type="button" id="learn-reveal">答えを見る</button>
+  </div>
+
+  <div id="results"></div>
+
+  <section class="card" id="trend-card">
+    <h2><svg class="ic"><use href="#i-clock"/></svg>経過</h2>
+    <div id="trend"></div>
+    <div class="log-actions">
+      <button class="btn-primary va-record-btn" type="button" id="record-btn"><svg class="ic"><use href="#i-check"/></svg> この時点の値を記録</button>
+    </div>
+    <div class="log-actions">
+      <button class="btn-secondary" type="button" id="new-btn">新しい評価を始める</button>
+    </div>
+    <div class="preset-msg" id="record-msg"></div>
+  </section>
+
+  <details class="card va-ref">
+    <summary><svg class="ic"><use href="#i-note"/></svg>判定に使っている基準と出典</summary>
+    <div id="ref-body"></div>
+  </details>
+
+  <div class="disclaimer">
+    <svg class="ic"><use href="#i-info"/></svg>
+    <div>評価結果は<strong>診療の参考・学習用</strong>で、診断ではありません。診断・治療の判断は利用者が行い、施設のプロトコルに従ってください。疾患の候補は入力された情報だけから挙げたもので、可能性の高さを保証するものではありません。<a href="terms.html">利用規約・免責事項</a></div>
+  </div>
+</main>
+
+<script src="js/va-common.js"></script>
+<script src="js/va-vital-engine.js"></script>
+<script src="js/va-vital.js"></script>
+<script src="js/sw-register.js"></script>
+</body>
+</html>

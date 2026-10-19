@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c1822">
+<title>VITAL ASSESS</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="va-page">
+<script src="js/icons.js"></script>
+<script src="js/native.js"></script>
+<script src="js/consent.js"></script>
+<main class="va-main">
+  <div class="va-home-hero">
+    <img class="va-home-logo" src="icons/icon.svg" alt="">
+    <div>
+      <div class="va-brand">VITAL ASSESS</div>
+      <div class="va-brand-ja">バイタルアセス</div>
+      <p>わかっている数値と波形から、すぐに考える</p>
+    </div>
+    <svg class="va-home-trace" viewBox="0 0 220 40" aria-hidden="true"><path d="M0 24h56l6-4 6 4h10l5-18 7 30 5-12h14l8-6 8 6h95"/></svg>
+  </div>
+
+  <nav class="va-home-main">
+    <a class="va-big-btn tone-vital" href="vital.html">
+      <span class="va-big-icon"><svg class="ic"><use href="#i-heart-pulse"/></svg></span>
+      <span class="va-big-title">バイタルサイン評価</span>
+      <span class="va-big-desc">緊急度・算出指標・考えられる疾患・次の行動</span>
+    </a>
+    <a class="va-big-btn tone-ecg" href="ecg.html">
+      <span class="va-big-icon"><svg class="ic"><use href="#i-ecg"/></svg></span>
+      <span class="va-big-title">心電図評価</span>
+      <span class="va-big-desc">写真で計測・リズム判定・波形クイズ</span>
+    </a>
+  </nav>
+
+  <div class="va-recent-head">
+    <div class="section-label">最近の評価記録</div>
+    <button class="va-text-btn" type="button" id="clear-all" hidden>すべて削除</button>
+  </div>
+  <div id="recent"></div>
+
+  <div class="disclaimer">
+    <svg class="ic"><use href="#i-info"/></svg>
+    <div>診療の参考と学習のためのツールで、医療機器ではありません。診断・治療の判断は利用者が行ってください。記録はこの端末の中だけに保存され、氏名・患者IDは入力しない設計です。<a href="terms.html">利用規約・免責事項</a></div>
+  </div>
+</main>
+<script src="js/va-common.js"></script>
+<script src="js/va-home.js"></script>
+<script src="js/sw-register.js"></script>
+</body>
+</html>
