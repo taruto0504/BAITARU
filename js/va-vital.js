@@ -19,6 +19,22 @@
   let lastResult = null;
   let started = false;
 
+  // 数値は3桁まで(体温などの小数点は桁に数えない)。4桁目は入力した時点で取り除く。
+  function clampDigits(el) {
+    const v = el.value;
+    if (!v || v.replace(/\D/g, "").length <= 3) return;
+    let out = "";
+    let n = 0;
+    for (const ch of v) {
+      if (/\d/.test(ch)) {
+        if (n >= 3) break;
+        n++;
+      }
+      out += ch;
+    }
+    el.value = out.replace(/\.$/, "");
+  }
+
   // ---- ワンタップの選択肢 ----
   root.querySelectorAll(".va-seg").forEach((seg) => {
     seg.addEventListener("click", (e) => {
@@ -479,7 +495,9 @@
     </div>`;
     const box = $("v-import");
     box.querySelectorAll('input[type="number"]').forEach((inp) => {
+      clampDigits(inp);
       inp.addEventListener("input", () => {
+        clampDigits(inp);
         box.querySelector(`input[data-k="${inp.dataset.v}"]`).checked = inp.value.trim() !== "";
       });
     });
@@ -576,6 +594,7 @@
   // ---- 初期化 ----
   root.querySelectorAll("main input, main select").forEach((el) => {
     if (el.type === "file" || el.closest("#v-import")) return;
+    if (NUM_FIELDS.includes(el.id)) el.addEventListener("input", () => clampDigits(el));
     el.addEventListener("input", update);
   });
   $("v-file-camera").addEventListener("change", (e) => onPhoto(e.target));
