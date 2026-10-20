@@ -6,6 +6,9 @@
   const icon = window.icon;
   const root = document.getElementById("view-vital");
   const $ = (id) => root.querySelector("#" + id);
+  // 疾患推定の画面(入力画面とは別の画面に表示する)
+  const rootE = document.getElementById("view-estimate");
+  const $E = (id) => rootE.querySelector("#" + id);
 
   const DRAFT_KEY = "vaVitalDraft_v1";
   const NUM_FIELDS = ["hr", "spo2", "o2Flow", "rSys", "rDia", "lSys", "lDia", "rr", "temp", "age"];
@@ -15,7 +18,6 @@
   const SEX_LABEL = { m: "男性", f: "女性", u: "" };
 
   let caseId = null;
-  let revealed = false;
   let lastResult = null;
   let started = false;
 
@@ -81,7 +83,7 @@
   }
 
   function saveDraft() {
-    window.VA.writeJSON(DRAFT_KEY, { caseId, form: readForm(), revealed });
+    window.VA.writeJSON(DRAFT_KEY, { caseId, form: readForm() });
   }
 
   // ---- 表示 ----
@@ -97,8 +99,9 @@
     renderUrgency(lastResult);
     renderTags(lastResult.input);
     renderSummary(lastResult);
-    renderEstimate(lastResult, f);
-    renderTrend();
+    const ready = isReady(lastResult);
+    $("estimate-btn").disabled = !ready;
+    $("estimate-label").textContent = ready ? "疾患推定する" : "値か主訴を入力すると疾患推定できます";
     saveDraft();
   }
 
@@ -142,7 +145,11 @@
     $("urgency-sub").textContent = u.level === "none" ? "わかっている値を入力すると、すぐに評価します" : u.reasons[0] + (u.reasons.length > 1 ? ` ほか${u.reasons.length - 1}件` : "");
   }
 
-  // 結果のうち、いつも見せるのは算出指標だけ(疾患推定とアドバイスはボタンで開く)
+  function isReady(r) {
+    return r.urgency.level !== "none" || r.input.complaints.length > 0;
+  }
+
+  // 入力画面で見せるのは算出指標だけ(疾患推定とアドバイスは疾患推定の画面に出す)
   function renderSummary(r) {
     if (r.urgency.level === "none") {
       $("summary").innerHTML = `<div class="va-empty">${icon("heart-pulse")}<p>わかっている値だけ入力してください。<br>入力するたびに緊急度と算出指標が更新されます。</p><button class="btn-secondary" type="button" id="load-sample">例を入れてみる</button></div>`;
@@ -176,15 +183,26 @@
     return esc(text).replace("（心電図評価へ）", ' <a href="#ecg">心電図評価へ</a>');
   }
 
+  function renderInputs(r, f) {
+    const v = r.input;
+    const who = [f.age ? `${f.age}歳` : AGE_GROUP_LABEL[f.ageGroup] || "", SEX_LABEL[f.sex] || ""].join(" ");
+    const row = (label, value) => (value ? `<div class="va-inputs-row"><span>${label}</span><b>${esc(value)}</b></div>` : "");
+    $E("e-inputs").innerHTML =
+      row("主訴", f.complaintText || (v.complaints.length ? v.complaints.join("・") : "")) +
+      row("患者", who.trim()) +
+      row("既往", f.historyText) +
+      row("バイタル", summarize(f) === "バイタル未入力" ? "" : summarize(f));
+  }
+
   function renderEstimate(r, f) {
-    const ready = r.urgency.level !== "none" || r.input.complaints.length > 0;
-    const btn = $("estimate-btn");
-    btn.disabled = !ready;
-    btn.setAttribute("aria-expanded", String(revealed && ready));
-    $("estimate-label").textContent = !ready ? "値か主訴を入力すると疾患推定できます" : revealed ? "疾患推定・アドバイスを閉じる" : "疾患推定・アドバイスを見る";
-    $("results").hidden = !(revealed && ready);
-    if (!revealed || !ready) {
-      $("results").innerHTML = "";
+    const u = r.urgency;
+    $E("e-urgency").className = `va-urgency lv-${u.level}`;
+    const ic = { high: "alert", mid: "alert", low: "check", none: "info" }[u.level];
+    $E("e-urgency-label").innerHTML = `${icon(ic)}${esc(u.label)}`;
+    $E("e-urgency-sub").textContent = u.level === "none" ? "バイタルの値が未入力です" : u.reasons[0] + (u.reasons.length > 1 ? ` ほか${u.reasons.length - 1}件` : "");
+    renderInputs(r, f);
+    if (!isReady(r)) {
+      $E("e-results").innerHTML = `<div class="va-empty">${icon("info")}<p>値か主訴を入力すると、疾患推定とアドバイスを表示します。</p><a class="btn-secondary" href="#vital">入力に戻る</a></div>`;
       return;
     }
     const out = [];
@@ -241,7 +259,7 @@
           .join("")}</ul>${cite(["news2", "jatec"])}</details>`
       );
     }
-    $("results").innerHTML = out.join("");
+    $E("e-results").innerHTML = out.join("");
   }
 
   // ---- 経過(記録) ----
@@ -303,7 +321,7 @@
     const rec = caseId ? window.VA.cases.get(caseId) : null;
     const entries = rec ? rec.entries : [];
     if (!entries.length) {
-      $("trend").innerHTML = `<p class="va-lead">「この時点の値を記録」を押すと、時刻つきで保存されます。再測定を続けて記録すると、変化をグラフで見られます。</p>`;
+      $E("trend").innerHTML = `<p class="va-lead">「記録して終了」を押すと、時刻つきで保存されます。ホームの記録から開いて再測定の値を記録すると、変化をグラフで見られます。</p>`;
       return;
     }
     const series = [
@@ -331,14 +349,14 @@
       .reverse()
       .map((e) => `<li><span class="log-time">${fmtTime(e.t, true)}</span><span class="va-entry-urg lv-${e.urgency}">${esc({ high: "高", mid: "中", low: "低", none: "－" }[e.urgency] || "－")}</span><span class="va-entry-sum">${esc(summarize(e.form))}</span></li>`)
       .join("");
-    $("trend").innerHTML = `<div class="va-case-label">${esc(rec.label)}</div>${rows}<ul class="va-entries">${list}</ul>`;
+    $E("trend").innerHTML = `<div class="va-case-label">${esc(rec.label)}</div>${rows}<ul class="va-entries">${list}</ul>`;
   }
 
   function record() {
     const f = readForm();
     if (!hasAnyInput(f)) {
       showMsg("記録する値がありません。わかっている値を入力してください。", true);
-      return;
+      return false;
     }
     const now = new Date().toISOString();
     let rec = caseId ? window.VA.cases.get(caseId) : null;
@@ -353,16 +371,27 @@
     rec.summary = summarize(f);
     if (!window.VA.cases.save(rec)) {
       showMsg("保存できませんでした。端末の保存領域を確認してください。", true);
-      return;
+      return false;
     }
-    history.replaceState(null, "", "#vital/" + caseId);
-    saveDraft();
-    renderTrend();
-    showMsg(`${fmtTime(now)} の値を記録しました（${rec.entries.length}回目）`);
+    return true;
+  }
+
+  // 記録して終了: 今の値を記録に足し、入力を空にしてホームへ戻る
+  function finish() {
+    if (hasAnyInput(readForm()) && !record()) return;
+    reset();
+    location.hash = "#home";
+  }
+
+  function reset() {
+    caseId = null;
+    writeForm({});
+    closeImport();
+    update();
   }
 
   function showMsg(text, isError) {
-    const el = $("record-msg");
+    const el = !rootE.hidden ? $E("record-msg") : $("v-msg");
     el.textContent = text;
     el.classList.toggle("is-error", !!isError);
     clearTimeout(showMsg.t);
@@ -372,12 +401,8 @@
   }
 
   function startNew() {
-    caseId = null;
-    revealed = false;
-    writeForm({});
-    closeImport();
+    reset();
     history.replaceState(null, "", "#vital");
-    update();
     window.scrollTo({ top: 0 });
   }
 
@@ -555,7 +580,7 @@
     const sources = Object.values(window.VA.SOURCES)
       .map((s) => `<li><b>${esc(s.name)}</b><br><span>${esc(s.org)}・${esc(s.version)}</span></li>`)
       .join("");
-    $("ref-body").innerHTML = `
+    $E("ref-body").innerHTML = `
       <h3>成人の判定基準（正常／注意／異常）</h3>
       <div class="va-table-wrap"><table class="va-table">
         <tr><th>項目</th><th>正常</th><th>異常</th></tr>
@@ -583,24 +608,28 @@
   });
   $("v-file-camera").addEventListener("change", (e) => onPhoto(e.target));
   $("v-file-photo").addEventListener("change", (e) => onPhoto(e.target));
-  $("estimate-btn").addEventListener("click", () => {
-    revealed = !revealed;
-    update();
-    if (revealed) $("results").scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-  $("urgency").addEventListener("click", () => {
-    if (!revealed && !$("estimate-btn").disabled) {
-      revealed = true;
-      update();
-    }
-    const el = $("reasons");
+  const goEstimate = () => {
+    if (!$("estimate-btn").disabled) location.hash = "#estimate";
+  };
+  $("estimate-btn").addEventListener("click", goEstimate);
+  $("urgency").addEventListener("click", goEstimate);
+  $E("e-urgency").addEventListener("click", () => {
+    const el = $E("reasons");
     if (el) {
       el.open = true;
       el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   });
-  $("record-btn").addEventListener("click", record);
-  $("new-btn").addEventListener("click", startNew);
+  $E("finish-btn").addEventListener("click", finish);
+  window.VA.twoTap(
+    $E("discard-btn"),
+    () => {
+      reset();
+      location.hash = "#home";
+    },
+    "もう一度押すと、記録せずに入力を消します"
+  );
+  window.VA.twoTap($("new-btn"), startNew, "もう一度押すと入力を消します");
   setupVoice("mic-complaint", "complaintText");
   setupVoice("mic-history", "historyText");
   renderReference();
@@ -614,10 +643,8 @@
         const draft = window.VA.readJSON(DRAFT_KEY, null);
         if (draft && draft.caseId === caseId) {
           writeForm(draft.form);
-          revealed = !!draft.revealed;
         } else {
           writeForm(rec.entries[rec.entries.length - 1].form);
-          revealed = false;
         }
       }
     } else if (!started) {
@@ -625,12 +652,17 @@
       if (draft) {
         caseId = draft.caseId && window.VA.cases.get(draft.caseId) ? draft.caseId : null;
         writeForm(draft.form);
-        revealed = !!draft.revealed;
       }
     }
     started = true;
     update();
   }
 
-  window.VAVitalView = { show };
+  function showEstimate() {
+    if (!started) show(null);
+    renderEstimate(lastResult, readForm());
+    renderTrend();
+  }
+
+  window.VAVitalView = { show, showEstimate };
 })();

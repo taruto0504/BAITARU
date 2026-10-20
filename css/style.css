@@ -2541,3 +2541,120 @@ input.va-small,
 @media (prefers-reduced-motion: reduce) {
   .va-spinner { animation: none; }
 }
+
+/* 疾患推定の画面 */
+.va-has-actionbar {
+  padding-bottom: calc(110px + var(--safe-bottom));
+}
+
+.va-actionbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 11;
+  padding: 10px max(16px, calc(50% - 264px)) calc(10px + var(--safe-bottom));
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: 0 -2px 12px rgba(10, 30, 50, 0.1);
+}
+
+.va-view[hidden] .va-actionbar {
+  display: none;
+}
+
+.va-actionbar .preset-msg {
+  margin: 0 0 6px;
+  min-height: 0;
+}
+
+.va-actionbar .preset-msg:empty {
+  display: none;
+}
+
+.va-actionbar-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.va-actionbar-row .btn-secondary,
+.va-actionbar-row .btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 52px;
+  margin: 0;
+  padding: 8px;
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.va-actionbar-row .btn-secondary {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.va-inputs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.va-text-link {
+  color: var(--color-primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.va-inputs-row {
+  display: grid;
+  grid-template-columns: 4.5em minmax(0, 1fr);
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.va-inputs-row span {
+  color: var(--color-text-muted);
+}
+
+.va-inputs-row b {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.va-clear-row,
+.va-discard-row {
+  display: flex;
+  justify-content: center;
+  margin: -4px 0 14px;
+}
+
+.va-discard-row {
+  margin: 14px 0 0;
+}
+
+.va-clear-row .va-text-btn,
+.va-discard-row .va-text-btn {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.va-clear-row .va-text-btn.confirm-armed,
+.va-discard-row .va-text-btn.confirm-armed {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.va-empty .btn-secondary {
+  text-decoration: none;
+}

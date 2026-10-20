@@ -73,6 +73,7 @@
     </div>
     <p class="hint" id="v-import-hint">モニター画面・電子カルテ・紙の記録にカメラを向けて撮影すると、HR・血圧・SpO2・RR・体温を読み取ります。読み取った値は確認してから入力欄に入ります。患者の氏名・IDが写らないように撮影してください。</p>
     <div id="v-import" hidden></div>
+    <div class="preset-msg" id="v-msg"></div>
   </section>
 
   <div id="checks"></div>
@@ -210,21 +211,40 @@
   
   <div id="summary"></div>
 
-  <button class="va-estimate-btn" type="button" id="estimate-btn" aria-expanded="false">
-    <svg class="ic"><use href="#i-bookmark"/></svg><span id="estimate-label">疾患推定・アドバイスを見る</span>
+  <button class="va-estimate-btn" type="button" id="estimate-btn">
+    <svg class="ic"><use href="#i-bookmark"/></svg><span id="estimate-label">疾患推定する</span>
   </button>
-  <div id="results" hidden></div>
+  <div class="va-clear-row"><button class="va-text-btn" type="button" id="new-btn">入力をすべて消す</button></div>
+
+  <div class="disclaimer">
+    <svg class="ic"><use href="#i-info"/></svg>
+    <div>評価結果は<strong>診療の参考・学習用</strong>で、診断ではありません。診断・治療の判断は利用者が行い、施設のプロトコルに従ってください。疾患の候補は入力された情報だけから挙げたもので、可能性の高さを保証するものではありません。<a href="#terms">利用規約・免責事項</a></div>
+  </div>
+</main>
+</div>
+
+<div class="va-view" id="view-estimate" hidden>
+<header class="app-header">
+  <a class="back-btn" href="#vital" aria-label="入力に戻る"><svg class="ic"><use href="#i-chevron-left"/></svg></a>
+  <h1><svg class="ic"><use href="#i-bookmark"/></svg>疾患推定</h1>
+</header>
+
+<button class="va-urgency lv-none" id="e-urgency" type="button" aria-live="polite">
+  <span class="va-urgency-label" id="e-urgency-label">未評価</span>
+  <span class="va-urgency-sub" id="e-urgency-sub"></span>
+</button>
+
+<main class="va-main va-has-actionbar">
+  <section class="card va-inputs-card">
+    <div class="va-inputs-head"><span>入力した情報</span><a href="#vital" class="va-text-link">修正する</a></div>
+    <div id="e-inputs"></div>
+  </section>
+
+  <div id="e-results"></div>
 
   <section class="card" id="trend-card">
     <h2><svg class="ic"><use href="#i-clock"/></svg>経過</h2>
     <div id="trend"></div>
-    <div class="log-actions">
-      <button class="btn-primary va-record-btn" type="button" id="record-btn"><svg class="ic"><use href="#i-check"/></svg> この時点の値を記録</button>
-    </div>
-    <div class="log-actions">
-      <button class="btn-secondary" type="button" id="new-btn">新しい評価を始める</button>
-    </div>
-    <div class="preset-msg" id="record-msg"></div>
   </section>
 
   <details class="card va-ref">
@@ -236,7 +256,16 @@
     <svg class="ic"><use href="#i-info"/></svg>
     <div>評価結果は<strong>診療の参考・学習用</strong>で、診断ではありません。診断・治療の判断は利用者が行い、施設のプロトコルに従ってください。疾患の候補は入力された情報だけから挙げたもので、可能性の高さを保証するものではありません。<a href="#terms">利用規約・免責事項</a></div>
   </div>
+  <div class="va-discard-row"><button class="va-text-btn" type="button" id="discard-btn">記録せずに終了</button></div>
 </main>
+
+<div class="va-actionbar">
+  <div class="preset-msg" id="record-msg"></div>
+  <div class="va-actionbar-row">
+    <a class="btn-secondary va-action-add" href="#vital"><svg class="ic"><use href="#i-heart-pulse"/></svg> 項目を追加・修正</a>
+    <button class="btn-primary va-action-finish" type="button" id="finish-btn"><svg class="ic"><use href="#i-check"/></svg> 記録して終了</button>
+  </div>
+</div>
 </div>
 
 <div class="va-view" id="view-ecg" hidden>
