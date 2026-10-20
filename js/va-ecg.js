@@ -516,7 +516,9 @@
 
   // ---- 初期化 ----
   root.querySelectorAll("#tab-judge input:not([type=file]), #tab-judge select").forEach((el) => {
-    if (el.id !== "calib-span") el.addEventListener("input", update);
+    if (el.id === "calib-span") return;
+    if (el.type === "number") el.addEventListener("input", () => window.VA.clampDigits(el));
+    el.addEventListener("input", update);
   });
   $("record-btn").addEventListener("click", record);
   $("clear-btn").addEventListener("click", () => {

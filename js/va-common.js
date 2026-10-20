@@ -120,6 +120,22 @@
     });
   }
 
+  // 数値は3桁まで(体温などの小数点は桁に数えない)。4桁目は入力した時点で取り除く。
+  function clampDigits(el) {
+    const v = el.value;
+    if (!v || v.replace(/\D/g, "").length <= 3) return;
+    let out = "";
+    let n = 0;
+    for (const ch of v) {
+      if (/\d/.test(ch)) {
+        if (n >= 3) break;
+        n++;
+      }
+      out += ch;
+    }
+    el.value = out.replace(/\.$/, "");
+  }
+
   window.VA = {
     SOURCES,
     cases: store(CASES_KEY),
@@ -132,6 +148,7 @@
     cite,
     chip,
     twoTap,
+    clampDigits,
     LEVEL_LABEL,
   };
 })();
